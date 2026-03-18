@@ -360,6 +360,121 @@ const Actions = {
     return { ...hitResult, flippedBottom, flipSegments };
   },
 
+  // 翻底打2：翻底n张，有潮就打2
+  flipHitTwo: (deck, n) => {
+    if (deck.gameOver) return { damage: 0, cancelled: false, penalty: 0, flipped: [], flippedBottom: [], flipSegments: [] };
+    
+    let hasClimax = false;
+    const flippedBottom = [];
+    const flipSegments = [];
+    let currentSegment = [];
+    
+    for (let i = 0; i < n; i++) {
+      if (deck.cards.length === 0) {
+        if (deck.graveyard.length === 0) {
+          deck.gameOver = true;
+          break;
+        }
+        if (currentSegment.length > 0) {
+          flipSegments.push({ cards: [...currentSegment] });
+          currentSegment = [];
+        }
+        deck.cards = deck.rng.shuffle([...deck.graveyard]);
+        deck.graveyard = [];
+        deck.refreshPenalty++;
+        flipSegments.push({ refresh: true, newDeck: [...deck.cards] });
+      }
+      
+      const card = deck.cards.pop();
+      flippedBottom.push(card);
+      currentSegment.push(card);
+      deck.graveyard.push(card);
+      if (card === 1) hasClimax = true;
+    }
+    
+    if (currentSegment.length > 0) {
+      flipSegments.push({ cards: [...currentSegment] });
+    }
+    
+    if (!hasClimax) {
+      deck.checkRefresh();
+      const penalty = deck.getAndResetPenalty();
+      return { damage: 0, cancelled: false, penalty, flipped: [], flippedBottom, flipSegments };
+    }
+    
+    const hitResult = Actions.hit(deck, 2);
+    return { ...hitResult, flippedBottom, flipSegments };
+  },
+
+  // 翻底打X个1：翻底n张，翻到几个潮就打几次1（每次独立判定）
+  flipHitXOnes: (deck, n) => {
+    if (deck.gameOver) return { damage: 0, cancelled: false, penalty: 0, flipped: [], flippedBottom: [], flipSegments: [], hitResults: [] };
+    
+    let climaxCount = 0;
+    const flippedBottom = [];
+    const flipSegments = [];
+    let currentSegment = [];
+    
+    for (let i = 0; i < n; i++) {
+      if (deck.cards.length === 0) {
+        if (deck.graveyard.length === 0) {
+          deck.gameOver = true;
+          break;
+        }
+        if (currentSegment.length > 0) {
+          flipSegments.push({ cards: [...currentSegment] });
+          currentSegment = [];
+        }
+        deck.cards = deck.rng.shuffle([...deck.graveyard]);
+        deck.graveyard = [];
+        deck.refreshPenalty++;
+        flipSegments.push({ refresh: true, newDeck: [...deck.cards] });
+      }
+      
+      const card = deck.cards.pop();
+      flippedBottom.push(card);
+      currentSegment.push(card);
+      deck.graveyard.push(card);
+      if (card === 1) climaxCount++;
+    }
+    
+    if (currentSegment.length > 0) {
+      flipSegments.push({ cards: [...currentSegment] });
+    }
+    
+    if (climaxCount === 0) {
+      deck.checkRefresh();
+      const penalty = deck.getAndResetPenalty();
+      return { damage: 0, cancelled: false, penalty, flipped: [], flippedBottom, flipSegments, hitResults: [], climaxCount: 0 };
+    }
+    
+    // 打X个1，每次独立判定
+    const hitResults = [];
+    let totalDamage = 0;
+    let totalPenalty = 0;
+    const allFlipped = [];
+    
+    for (let i = 0; i < climaxCount; i++) {
+      if (deck.gameOver) break;
+      const hitResult = Actions.hit(deck, 1);
+      hitResults.push(hitResult);
+      if (hitResult.damage) totalDamage += hitResult.damage;
+      if (hitResult.penalty) totalPenalty += hitResult.penalty;
+      if (hitResult.flipped) allFlipped.push(...hitResult.flipped);
+    }
+    
+    return { 
+      damage: totalDamage, 
+      cancelled: hitResults.length > 0 && hitResults[hitResults.length - 1].cancelled,
+      penalty: totalPenalty, 
+      flipped: allFlipped, 
+      flippedBottom, 
+      flipSegments, 
+      hitResults,
+      climaxCount
+    };
+  },
+
   // 真伤：翻牌但伤害直接生效（不会被cancel）
   trueDamage: (deck, amount) => {
     if (deck.gameOver) {
@@ -446,6 +561,18 @@ export const ActionDefinitions = {
   flipHit14: { name: "翻4打1", execute: (deck) => Actions.flipHitOne(deck, 4) },
   flipHit15: { name: "翻5打1", execute: (deck) => Actions.flipHitOne(deck, 5) },
   flipHit16: { name: "翻6打1", execute: (deck) => Actions.flipHitOne(deck, 6) },
+  flipHit21: { name: "翻1打2", execute: (deck) => Actions.flipHitTwo(deck, 1) },
+  flipHit22: { name: "翻2打2", execute: (deck) => Actions.flipHitTwo(deck, 2) },
+  flipHit23: { name: "翻3打2", execute: (deck) => Actions.flipHitTwo(deck, 3) },
+  flipHit24: { name: "翻4打2", execute: (deck) => Actions.flipHitTwo(deck, 4) },
+  flipHit25: { name: "翻5打2", execute: (deck) => Actions.flipHitTwo(deck, 5) },
+  flipHit26: { name: "翻6打2", execute: (deck) => Actions.flipHitTwo(deck, 6) },
+  flipHitXOnes1: { name: "翻1打X个1", execute: (deck) => Actions.flipHitXOnes(deck, 1) },
+  flipHitXOnes2: { name: "翻2打X个1", execute: (deck) => Actions.flipHitXOnes(deck, 2) },
+  flipHitXOnes3: { name: "翻3打X个1", execute: (deck) => Actions.flipHitXOnes(deck, 3) },
+  flipHitXOnes4: { name: "翻4打X个1", execute: (deck) => Actions.flipHitXOnes(deck, 4) },
+  flipHitXOnes5: { name: "翻5打X个1", execute: (deck) => Actions.flipHitXOnes(deck, 5) },
+  flipHitXOnes6: { name: "翻6打X个1", execute: (deck) => Actions.flipHitXOnes(deck, 6) },
   cancelChase1: { name: "cancel追1", execute: (deck, lastResult) => Actions.cancelChase(deck, 1, lastResult) },
   cancelChase2: { name: "cancel追2", execute: (deck, lastResult) => Actions.cancelChase(deck, 2, lastResult) },
   cancelChase3: { name: "cancel追3", execute: (deck, lastResult) => Actions.cancelChase(deck, 3, lastResult) },
@@ -559,9 +686,30 @@ export class Simulator {
       // 构建详细描述
       let detail = '';
       let flipSegments = null;
+      let hitResultsDetail = null;
       
-      // 翻底打X/翻底打1：有flippedBottom表示是翻底类型
-      if (result.flippedBottom && result.flippedBottom.length > 0) {
+      // 翻底打X个1：有hitResults表示是打多个1
+      if (result.hitResults && result.hitResults.length > 0) {
+        flipSegments = result.flipSegments.map(seg => {
+          if (seg.refresh) {
+            return { refresh: true, newDeck: formatCards(seg.newDeck) };
+          } else {
+            return { cards: formatCards(seg.cards), isFlipBottom: true };
+          }
+        });
+        
+        // 每次打1单独显示
+        hitResultsDetail = result.hitResults.map((hr, idx) => {
+          let card = formatCards(hr.flipped);
+          return { card, damage: hr.damage, cancelled: hr.cancelled, penalty: hr.penalty };
+        });
+        
+        if (result.climaxCount === 0) {
+          detail = '→ 无潮不打';
+        }
+      }
+      // 翻底打X/翻底打1/翻底打2：有flippedBottom表示是翻底类型
+      else if (result.flippedBottom && result.flippedBottom.length > 0) {
         flipSegments = result.flipSegments.map(seg => {
           if (seg.refresh) {
             return { refresh: true, newDeck: formatCards(seg.newDeck) };
@@ -640,7 +788,8 @@ export class Simulator {
         skipped: result.skipped || false,
         refreshEvents: deck.getAndResetRefreshEvents().map(cards => formatCards(cards)),
         penalty: result.penalty || 0,
-        flipSegments: flipSegments
+        flipSegments: flipSegments,
+        hitResultsDetail: hitResultsDetail
       });
       
       lastResult = result;

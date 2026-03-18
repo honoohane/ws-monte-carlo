@@ -23,10 +23,16 @@ function App() {
     { label: '真伤', actions: ['trueDmg1', 'trueDmg2', 'trueDmg3'] },
     { label: '摩卡', actions: ['mocha1', 'mocha2', 'mocha3'] },
     { label: '堆顶', actions: ['putTop1', 'putTop2', 'putTop3'] },
-    { label: '翻底打X', actions: ['flipHitX1', 'flipHitX2', 'flipHitX3', 'flipHitX4', 'flipHitX5', 'flipHitX6'] },
-    { label: '翻底打1', actions: ['flipHit11', 'flipHit12', 'flipHit13', 'flipHit14', 'flipHit15', 'flipHit16'] },
+    { label: '翻底', isFlipBottom: true },
     { label: 'cancel追X', actions: ['cancelChase1', 'cancelChase2', 'cancelChase3', 'cancelChase4', 'cancelChase5'] },
     { label: '打中追X', actions: ['hitChase1', 'hitChase2', 'hitChase3', 'hitChase4', 'hitChase5'] },
+  ]
+
+  const flipBottomTabs = [
+    { label: '翻底打X', prefix: 'flipHitX', count: 6 },
+    { label: '翻底打1', prefix: 'flipHit1', count: 6 },
+    { label: '翻底打2', prefix: 'flipHit2', count: 6 },
+    { label: '翻底打X个1', prefix: 'flipHitXOnes', count: 6 },
   ]
 
   const addAction = (actionId) => {
@@ -153,20 +159,46 @@ function App() {
         <div className="build-left">
           <h2>构建斩杀流程</h2>
           {actionGroups.map(group => (
-            <div key={group.label} className="action-group">
-              <span className="group-label">{group.label}</span>
-              <div className="action-buttons">
-                {group.actions.map(actionId => (
-                  <button 
-                    key={actionId}
-                    className="action-btn"
-                    onClick={() => addAction(actionId)}
-                  >
-                    {ActionDefinitions[actionId].name}
-                  </button>
-                ))}
+            group.isFlipBottom ? (
+              <div key={group.label} className="action-group flip-bottom-group">
+                <span className="group-label">{group.label}</span>
+                <div className="flip-bottom-tabs">
+                  {flipBottomTabs.map(tab => (
+                    <div key={tab.label} className="dropdown-tab">
+                      <span className="dropdown-tab-label">{tab.label}</span>
+                      <div className="dropdown-menu">
+                        <div className="dropdown-menu-inner">
+                          {Array.from({length: tab.count}, (_, i) => i + 1).map(n => (
+                            <button
+                              key={n}
+                              className="dropdown-item"
+                              onClick={() => addAction(tab.prefix + n)}
+                            >
+                              翻{n}{tab.label.replace('翻底', '')}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div key={group.label} className="action-group">
+                <span className="group-label">{group.label}</span>
+                <div className="action-buttons">
+                  {group.actions.map(actionId => (
+                    <button 
+                      key={actionId}
+                      className="action-btn"
+                      onClick={() => addAction(actionId)}
+                    >
+                      {ActionDefinitions[actionId].name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )
           ))}
         </div>
         
@@ -322,10 +354,20 @@ function App() {
                                   </div>
                                 )
                               ))}
-                              <div className={`detail-sub ${step.cancelled ? 'cancelled' : ''}`}>
-                                {step.detail}
-                                {step.damage > 0 && <span className="step-damage">+{step.damage}</span>}
-                              </div>
+                              {/* 翻底打X个1的分行显示 */}
+                              {step.hitResultsDetail && step.hitResultsDetail.length > 0 ? (
+                                step.hitResultsDetail.map((hit, k) => (
+                                  <div key={k} className={`detail-sub ${hit.cancelled ? 'cancelled' : ''}`}>
+                                    打1: {hit.card} → {hit.cancelled ? '被Cancel!' : ''}
+                                    {!hit.cancelled && hit.damage > 0 && <span className="step-damage">+{hit.damage}</span>}
+                                  </div>
+                                ))
+                              ) : (
+                                <div className={`detail-sub ${step.cancelled ? 'cancelled' : ''}`}>
+                                  {step.detail}
+                                  {step.damage > 0 && <span className="step-damage">+{step.damage}</span>}
+                                </div>
+                              )}
                             </>
                           )}
                           
