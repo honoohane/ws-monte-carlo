@@ -16,15 +16,16 @@ function App() {
   const [initialClimax, setInitialClimax] = useState(0)
 
   const [dragIndex, setDragIndex] = useState(null)
+  const [optionsPanelOpen, setOptionsPanelOpen] = useState(false)
 
   const actionGroups = [
     { label: '常规伤害', actions: ['hit1', 'hit2', 'hit3', 'hit4', 'hit5', 'hit6', 'hit7'] },
     { label: '真伤', actions: ['trueDmg1', 'trueDmg2', 'trueDmg3'] },
     { label: '摩卡', actions: ['mocha1', 'mocha2', 'mocha3'] },
-    { label: '放顶', actions: ['putTop1', 'putTop2', 'putTop3'] },
+    { label: '堆顶', actions: ['putTop1', 'putTop2', 'putTop3'] },
     { label: '翻底打X', actions: ['flipHitX1', 'flipHitX2', 'flipHitX3', 'flipHitX4', 'flipHitX5', 'flipHitX6'] },
     { label: '翻底打1', actions: ['flipHit11', 'flipHit12', 'flipHit13', 'flipHit14', 'flipHit15', 'flipHit16'] },
-    { label: '康了追X', actions: ['cancelChase1', 'cancelChase2', 'cancelChase3', 'cancelChase4', 'cancelChase5'] },
+    { label: 'cancel追X', actions: ['cancelChase1', 'cancelChase2', 'cancelChase3', 'cancelChase4', 'cancelChase5'] },
     { label: '打中追X', actions: ['hitChase1', 'hitChase2', 'hitChase3', 'hitChase4', 'hitChase5'] },
   ]
 
@@ -66,6 +67,42 @@ function App() {
 
   const handleDragEnd = () => {
     setDragIndex(null)
+  }
+
+  // 触摸拖拽支持
+  const [touchStartY, setTouchStartY] = useState(null)
+  
+  const handleTouchStart = (e, index) => {
+    setDragIndex(index)
+    setTouchStartY(e.touches[0].clientY)
+  }
+
+  const handleTouchMove = (e, index) => {
+    if (dragIndex === null) return
+    
+    const touch = e.touches[0]
+    const elements = document.querySelectorAll('.flow-item')
+    
+    for (let i = 0; i < elements.length; i++) {
+      const rect = elements[i].getBoundingClientRect()
+      if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
+          touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+        if (i !== dragIndex) {
+          const newFlow = [...flow]
+          const dragItem = newFlow[dragIndex]
+          newFlow.splice(dragIndex, 1)
+          newFlow.splice(i, 0, dragItem)
+          setFlow(newFlow)
+          setDragIndex(i)
+        }
+        break
+      }
+    }
+  }
+
+  const handleTouchEnd = () => {
+    setDragIndex(null)
+    setTouchStartY(null)
   }
 
   const runSimulation = async () => {
@@ -133,27 +170,37 @@ function App() {
           ))}
         </div>
         
-        <div className="build-right">
-          <h3>详细模拟选项</h3>
-          <div className="option-row">
-            <label>
-              <input 
-                type="checkbox"
-                checked={useInitialDeck}
-                onChange={(e) => setUseInitialDeck(e.target.checked)}
-              />
-              自定义初始牌库
-            </label>
+        <button 
+          className="options-toggle-btn"
+          onClick={() => setOptionsPanelOpen(!optionsPanelOpen)}
+        >
+          ⚙ 选项
+        </button>
+        
+        <div className={`build-right ${optionsPanelOpen ? 'open' : ''}`}>
+          <div className="build-right-header">
+            <h3>详细模拟选项</h3>
+            <button className="close-options-btn" onClick={() => setOptionsPanelOpen(false)}>×</button>
           </div>
-          {useInitialDeck && (
+          <div className={`option-group ${useInitialDeck ? '' : 'disabled'}`}>
+            <div className="option-row">
+              <label 
+                className={`custom-checkbox-label ${useInitialDeck ? 'checked' : ''}`}
+                onClick={() => setUseInitialDeck(!useInitialDeck)}
+              >
+                <span className="custom-checkbox"></span>
+                自定义对手初始牌库
+              </label>
+            </div>
             <div className="option-row initial-deck-row">
-              <label>初始牌库：</label>
+              <label>对手初始牌库：</label>
               <input 
                 type="number" 
                 min="1" 
                 max="35"
                 value={initialDeck} 
                 onChange={(e) => setInitialDeck(Math.max(1, parseInt(e.target.value) || 1))}
+                disabled={!useInitialDeck}
               />
               <span>张</span>
               <input 
@@ -162,11 +209,14 @@ function App() {
                 max={initialDeck}
                 value={initialClimax} 
                 onChange={(e) => setInitialClimax(Math.min(initialDeck, Math.max(0, parseInt(e.target.value) || 0)))}
+                disabled={!useInitialDeck}
               />
               <span>潮</span>
             </div>
-          )}
+          </div>
         </div>
+        
+        {optionsPanelOpen && <div className="options-overlay" onClick={() => setOptionsPanelOpen(false)}></div>}
       </div>
       
       <div className="section">
@@ -184,6 +234,9 @@ function App() {
                   onDragStart={() => handleDragStart(index)}
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDragEnd={handleDragEnd}
+                  onTouchStart={(e) => handleTouchStart(e, index)}
+                  onTouchMove={(e) => handleTouchMove(e, index)}
+                  onTouchEnd={handleTouchEnd}
                 >
                   {ActionDefinitions[actionId].name}
                   <button 
@@ -237,7 +290,7 @@ function App() {
                       <div className="detail-header">
                         第{i + 1}次 - 总伤害: {run.totalDamage}
                       </div>
-                      <div className="detail-deck">初始牌库: {run.initialDeck}</div>
+                      <div className="detail-deck">对手初始牌库: {run.initialDeck}</div>
                       {run.initialGraveyard && (
                         <div className="detail-graveyard">初始弃牌: {run.initialGraveyard}</div>
                       )}

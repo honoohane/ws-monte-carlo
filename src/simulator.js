@@ -253,7 +253,7 @@ const Actions = {
     return { climaxCount, penalty, flipped };
   },
 
-  // 放顶：往牌库顶放“虚拟”非潮卡（肉）
+  // 堆顶：往牌库顶放"虚拟"非潮卡（肉）
   putTop: (deck, n) => {
     if (deck.gameOver) return { placed: 0 };
     // 简化处理：直接在牌库顶部添加n张非潮卡
@@ -399,7 +399,7 @@ const Actions = {
     return { damage: amount, cancelled: false, penalty, flipped, flipSegments };
   },
 
-  // 康了追X：上一段被cancel时才执行
+  // cancel追X：上一段被cancel时才执行
   cancelChase: (deck, amount, lastResult) => {
     if (!lastResult || !lastResult.cancelled) {
       return { damage: 0, cancelled: false, penalty: 0, flipped: [], skipped: true };
@@ -431,9 +431,9 @@ export const ActionDefinitions = {
   mocha2: { name: "摩卡2", execute: (deck) => Actions.lookTopDiscardClimax(deck, 2) },
   mocha3: { name: "摩卡3", execute: (deck) => Actions.lookTopDiscardClimax(deck, 3) },
   mocha4: { name: "摩卡4", execute: (deck) => Actions.lookTopDiscardClimax(deck, 4) },
-  putTop1: { name: "放顶1", execute: (deck) => Actions.putTop(deck, 1) },
-  putTop2: { name: "放顶2", execute: (deck) => Actions.putTop(deck, 2) },
-  putTop3: { name: "放顶3", execute: (deck) => Actions.putTop(deck, 3) },
+  putTop1: { name: "堆顶1", execute: (deck) => Actions.putTop(deck, 1) },
+  putTop2: { name: "堆顶2", execute: (deck) => Actions.putTop(deck, 2) },
+  putTop3: { name: "堆顶3", execute: (deck) => Actions.putTop(deck, 3) },
   flipHitX1: { name: "翻1打X", execute: (deck) => Actions.flipHitClimax(deck, 1) },
   flipHitX2: { name: "翻2打X", execute: (deck) => Actions.flipHitClimax(deck, 2) },
   flipHitX3: { name: "翻3打X", execute: (deck) => Actions.flipHitClimax(deck, 3) },
@@ -446,11 +446,11 @@ export const ActionDefinitions = {
   flipHit14: { name: "翻4打1", execute: (deck) => Actions.flipHitOne(deck, 4) },
   flipHit15: { name: "翻5打1", execute: (deck) => Actions.flipHitOne(deck, 5) },
   flipHit16: { name: "翻6打1", execute: (deck) => Actions.flipHitOne(deck, 6) },
-  cancelChase1: { name: "康了追1", execute: (deck, lastResult) => Actions.cancelChase(deck, 1, lastResult) },
-  cancelChase2: { name: "康了追2", execute: (deck, lastResult) => Actions.cancelChase(deck, 2, lastResult) },
-  cancelChase3: { name: "康了追3", execute: (deck, lastResult) => Actions.cancelChase(deck, 3, lastResult) },
-  cancelChase4: { name: "康了追4", execute: (deck, lastResult) => Actions.cancelChase(deck, 4, lastResult) },
-  cancelChase5: { name: "康了追5", execute: (deck, lastResult) => Actions.cancelChase(deck, 5, lastResult) },
+  cancelChase1: { name: "cancel追1", execute: (deck, lastResult) => Actions.cancelChase(deck, 1, lastResult) },
+  cancelChase2: { name: "cancel追2", execute: (deck, lastResult) => Actions.cancelChase(deck, 2, lastResult) },
+  cancelChase3: { name: "cancel追3", execute: (deck, lastResult) => Actions.cancelChase(deck, 3, lastResult) },
+  cancelChase4: { name: "cancel追4", execute: (deck, lastResult) => Actions.cancelChase(deck, 4, lastResult) },
+  cancelChase5: { name: "cancel追5", execute: (deck, lastResult) => Actions.cancelChase(deck, 5, lastResult) },
   hitChase1: { name: "打中追1", execute: (deck, lastResult) => Actions.hitChase(deck, 1, lastResult) },
   hitChase2: { name: "打中追2", execute: (deck, lastResult) => Actions.hitChase(deck, 2, lastResult) },
   hitChase3: { name: "打中追3", execute: (deck, lastResult) => Actions.hitChase(deck, 3, lastResult) },
@@ -617,9 +617,9 @@ export class Simulator {
           detail += ' → 造成' + stepDamage + '点伤害';
         }
       }
-      // 放顶
+      // 堆顶
       else if (result.placed !== undefined) {
-        detail = '放' + result.placed + '张肉到牌库顶';
+        detail = '堆顶' + result.placed + '张肉';
       }
       // 跳过的条件追击
       else if (result.skipped) {
