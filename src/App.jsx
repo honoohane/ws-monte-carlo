@@ -15,6 +15,11 @@ function App() {
   const [initialDeck, setInitialDeck] = useState(1)
   const [initialClimax, setInitialClimax] = useState(0)
 
+  // 自定义模拟时对手完整牌库（只影响详细模拟，不影响表格）
+  const [useCustomDeck, setUseCustomDeck] = useState(false)
+  const [customDeckSize, setCustomDeckSize] = useState(25)
+  const [customDeckClimax, setCustomDeckClimax] = useState(7)
+
   const [dragIndex, setDragIndex] = useState(null)
   const [optionsPanelOpen, setOptionsPanelOpen] = useState(false)
 
@@ -157,8 +162,8 @@ function App() {
       // 详细模拟用随机种子
       const detailSimulator = new Simulator(Date.now())
       const detailed = detailSimulator.generateDetailedRuns(
-        25, 
-        7, 
+        useCustomDeck ? customDeckSize : 25, 
+        useCustomDeck ? customDeckClimax : 7, 
         flow, 
         5,
         useInitialDeck ? initialDeck : null,
@@ -317,7 +322,7 @@ function App() {
                 onClick={() => setUseInitialDeck(!useInitialDeck)}
               >
                 <span className="custom-checkbox"></span>
-                自定义对手初始牌库
+                自定义斩杀开始时对手牌库
               </label>
             </div>
             <div className="option-row initial-deck-row">
@@ -327,7 +332,12 @@ function App() {
                 min="1" 
                 max="35"
                 value={initialDeck} 
-                onChange={(e) => setInitialDeck(Math.max(1, parseInt(e.target.value) || 1))}
+                onChange={(e) => setInitialDeck(parseInt(e.target.value) || '')}
+                onBlur={(e) => {
+                  const val = Math.min(35, Math.max(1, parseInt(e.target.value) || 1))
+                  setInitialDeck(val)
+                  if (initialClimax > val) setInitialClimax(val)
+                }}
                 disabled={!useInitialDeck}
               />
               <span>张</span>
@@ -336,8 +346,53 @@ function App() {
                 min="0" 
                 max={initialDeck}
                 value={initialClimax} 
-                onChange={(e) => setInitialClimax(Math.min(initialDeck, Math.max(0, parseInt(e.target.value) || 0)))}
+                onChange={(e) => setInitialClimax(parseInt(e.target.value) || '')}
+                onBlur={(e) => {
+                  const val = Math.min(initialDeck, Math.max(0, parseInt(e.target.value) || 0))
+                  setInitialClimax(val)
+                }}
                 disabled={!useInitialDeck}
+              />
+              <span>潮</span>
+            </div>
+          </div>
+          
+          <div className={`option-group ${useCustomDeck ? '' : 'disabled'}`}>
+            <div className="option-row">
+              <label 
+                className={`custom-checkbox-label ${useCustomDeck ? 'checked' : ''}`}
+                onClick={() => setUseCustomDeck(!useCustomDeck)}
+              >
+                <span className="custom-checkbox"></span>
+                自定义模拟时对手完整牌库
+              </label>
+            </div>
+            <div className="option-row initial-deck-row">
+              <input 
+                type="number" 
+                min="1" 
+                max="50"
+                value={customDeckSize} 
+                onChange={(e) => setCustomDeckSize(parseInt(e.target.value) || '')}
+                onBlur={(e) => {
+                  const val = Math.min(50, Math.max(1, parseInt(e.target.value) || 1))
+                  setCustomDeckSize(val)
+                  if (customDeckClimax > val) setCustomDeckClimax(val)
+                }}
+                disabled={!useCustomDeck}
+              />
+              <span>张</span>
+              <input 
+                type="number" 
+                min="0" 
+                max={customDeckSize}
+                value={customDeckClimax} 
+                onChange={(e) => setCustomDeckClimax(parseInt(e.target.value) || '')}
+                onBlur={(e) => {
+                  const val = Math.min(customDeckSize, Math.max(0, parseInt(e.target.value) || 0))
+                  setCustomDeckClimax(val)
+                }}
+                disabled={!useCustomDeck}
               />
               <span>潮</span>
             </div>
