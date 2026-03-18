@@ -632,6 +632,24 @@ const Actions = {
       return { damage: 0, cancelled: false, penalty: 0, flipped: [], skipped: true };
     }
     return Actions.hit(deck, amount);
+  },
+  
+  // 概率触爆：按概率伤害+1
+  hitWithBurst: (deck, amount, burstChance) => {
+    const burst = deck.rng.next() < burstChance;
+    const actualAmount = burst ? amount + 1 : amount;
+    const result = Actions.hit(deck, actualAmount);
+    return { ...result, burst, originalAmount: amount };
+  },
+  
+  // 概率打伤：按概率决定是否打
+  hitWithChance: (deck, amount, hitChance) => {
+    const triggered = deck.rng.next() < hitChance;
+    if (!triggered) {
+      return { damage: 0, cancelled: false, penalty: 0, flipped: [], triggered: false, skipped: true };
+    }
+    const result = Actions.hit(deck, amount);
+    return { ...result, triggered: true };
   }
 };
 
@@ -643,6 +661,80 @@ export const ActionDefinitions = {
   hit5: { name: "打5", execute: (deck) => Actions.hit(deck, 5) },
   hit6: { name: "打6", execute: (deck) => Actions.hit(deck, 6) },
   hit7: { name: "打7", execute: (deck) => Actions.hit(deck, 7) },
+  // 概率触爆系列
+  hitBurst1_10: { name: "打1(10%爆)", execute: (deck) => Actions.hitWithBurst(deck, 1, 0.1) },
+  hitBurst1_20: { name: "打1(20%爆)", execute: (deck) => Actions.hitWithBurst(deck, 1, 0.2) },
+  hitBurst1_30: { name: "打1(30%爆)", execute: (deck) => Actions.hitWithBurst(deck, 1, 0.3) },
+  hitBurst1_40: { name: "打1(40%爆)", execute: (deck) => Actions.hitWithBurst(deck, 1, 0.4) },
+  hitBurst1_50: { name: "打1(50%爆)", execute: (deck) => Actions.hitWithBurst(deck, 1, 0.5) },
+  hitBurst1_60: { name: "打1(60%爆)", execute: (deck) => Actions.hitWithBurst(deck, 1, 0.6) },
+  hitBurst1_70: { name: "打1(70%爆)", execute: (deck) => Actions.hitWithBurst(deck, 1, 0.7) },
+  hitBurst1_80: { name: "打1(80%爆)", execute: (deck) => Actions.hitWithBurst(deck, 1, 0.8) },
+  hitBurst1_90: { name: "打1(90%爆)", execute: (deck) => Actions.hitWithBurst(deck, 1, 0.9) },
+  hitBurst2_10: { name: "打2(10%爆)", execute: (deck) => Actions.hitWithBurst(deck, 2, 0.1) },
+  hitBurst2_20: { name: "打2(20%爆)", execute: (deck) => Actions.hitWithBurst(deck, 2, 0.2) },
+  hitBurst2_30: { name: "打2(30%爆)", execute: (deck) => Actions.hitWithBurst(deck, 2, 0.3) },
+  hitBurst2_40: { name: "打2(40%爆)", execute: (deck) => Actions.hitWithBurst(deck, 2, 0.4) },
+  hitBurst2_50: { name: "打2(50%爆)", execute: (deck) => Actions.hitWithBurst(deck, 2, 0.5) },
+  hitBurst2_60: { name: "打2(60%爆)", execute: (deck) => Actions.hitWithBurst(deck, 2, 0.6) },
+  hitBurst2_70: { name: "打2(70%爆)", execute: (deck) => Actions.hitWithBurst(deck, 2, 0.7) },
+  hitBurst2_80: { name: "打2(80%爆)", execute: (deck) => Actions.hitWithBurst(deck, 2, 0.8) },
+  hitBurst2_90: { name: "打2(90%爆)", execute: (deck) => Actions.hitWithBurst(deck, 2, 0.9) },
+  hitBurst3_10: { name: "打3(10%爆)", execute: (deck) => Actions.hitWithBurst(deck, 3, 0.1) },
+  hitBurst3_20: { name: "打3(20%爆)", execute: (deck) => Actions.hitWithBurst(deck, 3, 0.2) },
+  hitBurst3_30: { name: "打3(30%爆)", execute: (deck) => Actions.hitWithBurst(deck, 3, 0.3) },
+  hitBurst3_40: { name: "打3(40%爆)", execute: (deck) => Actions.hitWithBurst(deck, 3, 0.4) },
+  hitBurst3_50: { name: "打3(50%爆)", execute: (deck) => Actions.hitWithBurst(deck, 3, 0.5) },
+  hitBurst3_60: { name: "打3(60%爆)", execute: (deck) => Actions.hitWithBurst(deck, 3, 0.6) },
+  hitBurst3_70: { name: "打3(70%爆)", execute: (deck) => Actions.hitWithBurst(deck, 3, 0.7) },
+  hitBurst3_80: { name: "打3(80%爆)", execute: (deck) => Actions.hitWithBurst(deck, 3, 0.8) },
+  hitBurst3_90: { name: "打3(90%爆)", execute: (deck) => Actions.hitWithBurst(deck, 3, 0.9) },
+  hitBurst4_10: { name: "打4(10%爆)", execute: (deck) => Actions.hitWithBurst(deck, 4, 0.1) },
+  hitBurst4_20: { name: "打4(20%爆)", execute: (deck) => Actions.hitWithBurst(deck, 4, 0.2) },
+  hitBurst4_30: { name: "打4(30%爆)", execute: (deck) => Actions.hitWithBurst(deck, 4, 0.3) },
+  hitBurst4_40: { name: "打4(40%爆)", execute: (deck) => Actions.hitWithBurst(deck, 4, 0.4) },
+  hitBurst4_50: { name: "打4(50%爆)", execute: (deck) => Actions.hitWithBurst(deck, 4, 0.5) },
+  hitBurst4_60: { name: "打4(60%爆)", execute: (deck) => Actions.hitWithBurst(deck, 4, 0.6) },
+  hitBurst4_70: { name: "打4(70%爆)", execute: (deck) => Actions.hitWithBurst(deck, 4, 0.7) },
+  hitBurst4_80: { name: "打4(80%爆)", execute: (deck) => Actions.hitWithBurst(deck, 4, 0.8) },
+  hitBurst4_90: { name: "打4(90%爆)", execute: (deck) => Actions.hitWithBurst(deck, 4, 0.9) },
+  // 概率打伤系列
+  hitChance1_10: { name: "10%打1", execute: (deck) => Actions.hitWithChance(deck, 1, 0.1) },
+  hitChance1_20: { name: "20%打1", execute: (deck) => Actions.hitWithChance(deck, 1, 0.2) },
+  hitChance1_30: { name: "30%打1", execute: (deck) => Actions.hitWithChance(deck, 1, 0.3) },
+  hitChance1_40: { name: "40%打1", execute: (deck) => Actions.hitWithChance(deck, 1, 0.4) },
+  hitChance1_50: { name: "50%打1", execute: (deck) => Actions.hitWithChance(deck, 1, 0.5) },
+  hitChance1_60: { name: "60%打1", execute: (deck) => Actions.hitWithChance(deck, 1, 0.6) },
+  hitChance1_70: { name: "70%打1", execute: (deck) => Actions.hitWithChance(deck, 1, 0.7) },
+  hitChance1_80: { name: "80%打1", execute: (deck) => Actions.hitWithChance(deck, 1, 0.8) },
+  hitChance1_90: { name: "90%打1", execute: (deck) => Actions.hitWithChance(deck, 1, 0.9) },
+  hitChance2_10: { name: "10%打2", execute: (deck) => Actions.hitWithChance(deck, 2, 0.1) },
+  hitChance2_20: { name: "20%打2", execute: (deck) => Actions.hitWithChance(deck, 2, 0.2) },
+  hitChance2_30: { name: "30%打2", execute: (deck) => Actions.hitWithChance(deck, 2, 0.3) },
+  hitChance2_40: { name: "40%打2", execute: (deck) => Actions.hitWithChance(deck, 2, 0.4) },
+  hitChance2_50: { name: "50%打2", execute: (deck) => Actions.hitWithChance(deck, 2, 0.5) },
+  hitChance2_60: { name: "60%打2", execute: (deck) => Actions.hitWithChance(deck, 2, 0.6) },
+  hitChance2_70: { name: "70%打2", execute: (deck) => Actions.hitWithChance(deck, 2, 0.7) },
+  hitChance2_80: { name: "80%打2", execute: (deck) => Actions.hitWithChance(deck, 2, 0.8) },
+  hitChance2_90: { name: "90%打2", execute: (deck) => Actions.hitWithChance(deck, 2, 0.9) },
+  hitChance3_10: { name: "10%打3", execute: (deck) => Actions.hitWithChance(deck, 3, 0.1) },
+  hitChance3_20: { name: "20%打3", execute: (deck) => Actions.hitWithChance(deck, 3, 0.2) },
+  hitChance3_30: { name: "30%打3", execute: (deck) => Actions.hitWithChance(deck, 3, 0.3) },
+  hitChance3_40: { name: "40%打3", execute: (deck) => Actions.hitWithChance(deck, 3, 0.4) },
+  hitChance3_50: { name: "50%打3", execute: (deck) => Actions.hitWithChance(deck, 3, 0.5) },
+  hitChance3_60: { name: "60%打3", execute: (deck) => Actions.hitWithChance(deck, 3, 0.6) },
+  hitChance3_70: { name: "70%打3", execute: (deck) => Actions.hitWithChance(deck, 3, 0.7) },
+  hitChance3_80: { name: "80%打3", execute: (deck) => Actions.hitWithChance(deck, 3, 0.8) },
+  hitChance3_90: { name: "90%打3", execute: (deck) => Actions.hitWithChance(deck, 3, 0.9) },
+  hitChance4_10: { name: "10%打4", execute: (deck) => Actions.hitWithChance(deck, 4, 0.1) },
+  hitChance4_20: { name: "20%打4", execute: (deck) => Actions.hitWithChance(deck, 4, 0.2) },
+  hitChance4_30: { name: "30%打4", execute: (deck) => Actions.hitWithChance(deck, 4, 0.3) },
+  hitChance4_40: { name: "40%打4", execute: (deck) => Actions.hitWithChance(deck, 4, 0.4) },
+  hitChance4_50: { name: "50%打4", execute: (deck) => Actions.hitWithChance(deck, 4, 0.5) },
+  hitChance4_60: { name: "60%打4", execute: (deck) => Actions.hitWithChance(deck, 4, 0.6) },
+  hitChance4_70: { name: "70%打4", execute: (deck) => Actions.hitWithChance(deck, 4, 0.7) },
+  hitChance4_80: { name: "80%打4", execute: (deck) => Actions.hitWithChance(deck, 4, 0.8) },
+  hitChance4_90: { name: "90%打4", execute: (deck) => Actions.hitWithChance(deck, 4, 0.9) },
   trueDmg1: { name: "真伤1", execute: (deck) => Actions.trueDamage(deck, 1) },
   trueDmg2: { name: "真伤2", execute: (deck) => Actions.trueDamage(deck, 2) },
   trueDmg3: { name: "真伤3", execute: (deck) => Actions.trueDamage(deck, 3) },
@@ -853,10 +945,11 @@ export class Simulator {
         });
         
         // 最终结果
+        let burstText = result.burst ? '🔥触爆！' : '';
         if (result.cancelled) {
-          detail = '总计: ' + formatCards(result.flipped) + ' → 被Cancel!';
+          detail = burstText + '总计: ' + formatCards(result.flipped) + ' → 被Cancel!';
         } else if (stepDamage > 0) {
-          detail = '总计: ' + formatCards(result.flipped) + ' → 造成' + stepDamage + '点伤害';
+          detail = burstText + '总计: ' + formatCards(result.flipped) + ' → 造成' + stepDamage + '点伤害';
         }
       }
       // 摩卡：看了哪些牌
@@ -883,7 +976,17 @@ export class Simulator {
       }
       // 打/翻：翻出哪些牌
       else if (result.flipped && result.flipped.length > 0) {
-        detail = '翻出: ' + formatCards(result.flipped);
+        // 触爆显示
+        let burstText = '';
+        if (result.burst !== undefined) {
+          burstText = result.burst ? '🔥触爆！' : '';
+        }
+        // 概率打伤触发显示
+        let triggeredText = '';
+        if (result.triggered !== undefined) {
+          triggeredText = result.triggered ? '🎯触发！' : '';
+        }
+        detail = burstText + triggeredText + '翻出: ' + formatCards(result.flipped);
         if (result.cancelled) {
           detail += ' → 被Cancel!';
         } else if (stepDamage > 0) {
@@ -893,6 +996,10 @@ export class Simulator {
       // 堆顶
       else if (result.placed !== undefined) {
         detail = '堆顶' + result.placed + '张肉';
+      }
+      // 概率打伤未触发
+      else if (result.triggered === false) {
+        detail = '未触发，跳过';
       }
       // 跳过的条件追击
       else if (result.skipped) {

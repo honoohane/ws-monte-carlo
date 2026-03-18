@@ -20,6 +20,8 @@ function App() {
 
   const actionGroups = [
     { label: '常规伤害', actions: ['hit1', 'hit2', 'hit3', 'hit4', 'hit5', 'hit6', 'hit7'] },
+    { label: '概率触爆', isBurst: true },
+    { label: '概率打伤', isChance: true },
     { label: '真伤', actions: ['trueDmg1', 'trueDmg2', 'trueDmg3'] },
     { label: '摩卡', isMocha: true },
     { label: '反洗', actions: ['antiRefresh1', 'antiRefresh2', 'antiRefresh3', 'antiRefresh4', 'antiRefresh5'] },
@@ -27,6 +29,22 @@ function App() {
     { label: '翻底', isFlipBottom: true },
     { label: 'cancel追X', actions: ['cancelChase1', 'cancelChase2', 'cancelChase3', 'cancelChase4', 'cancelChase5'] },
     { label: '打中追X', actions: ['hitChase1', 'hitChase2', 'hitChase3', 'hitChase4', 'hitChase5'] },
+  ]
+
+  // 概率触爆tabs：打1-4
+  const burstTabs = [
+    { label: '打1', amount: 1 },
+    { label: '打2', amount: 2 },
+    { label: '打3', amount: 3 },
+    { label: '打4', amount: 4 },
+  ]
+
+  // 概率打伤tabs：打1-4
+  const chanceTabs = [
+    { label: '打1', amount: 1 },
+    { label: '打2', amount: 2 },
+    { label: '打3', amount: 3 },
+    { label: '打4', amount: 4 },
   ]
 
   const mochaTabs = [
@@ -205,6 +223,54 @@ function App() {
                               onClick={() => addAction(tab.prefix + n)}
                             >
                               {tab.label.replace('X', n)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : group.isBurst ? (
+              <div key={group.label} className="action-group burst-group">
+                <span className="group-label">{group.label}</span>
+                <div className="flip-bottom-tabs">
+                  {burstTabs.map(tab => (
+                    <div key={tab.label} className="dropdown-tab">
+                      <span className="dropdown-tab-label">{tab.label}</span>
+                      <div className="dropdown-menu">
+                        <div className="dropdown-menu-inner">
+                          {[10, 20, 30, 40, 50, 60, 70, 80, 90].map(pct => (
+                            <button
+                              key={pct}
+                              className="dropdown-item"
+                              onClick={() => addAction(`hitBurst${tab.amount}_${pct}`)}
+                            >
+                              {tab.label}（{pct}%触爆）
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : group.isChance ? (
+              <div key={group.label} className="action-group chance-group">
+                <span className="group-label">{group.label}</span>
+                <div className="flip-bottom-tabs">
+                  {chanceTabs.map(tab => (
+                    <div key={tab.label} className="dropdown-tab">
+                      <span className="dropdown-tab-label">{tab.label}</span>
+                      <div className="dropdown-menu">
+                        <div className="dropdown-menu-inner">
+                          {[10, 20, 30, 40, 50, 60, 70, 80, 90].map(pct => (
+                            <button
+                              key={pct}
+                              className="dropdown-item"
+                              onClick={() => addAction(`hitChance${tab.amount}_${pct}`)}
+                            >
+                              {pct}%打{tab.amount}
                             </button>
                           ))}
                         </div>
