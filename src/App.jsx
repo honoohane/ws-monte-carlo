@@ -22,6 +22,7 @@ function App() {
     { label: '常规伤害', actions: ['hit1', 'hit2', 'hit3', 'hit4', 'hit5', 'hit6', 'hit7'] },
     { label: '真伤', actions: ['trueDmg1', 'trueDmg2', 'trueDmg3'] },
     { label: '摩卡', isMocha: true },
+    { label: '反洗', actions: ['antiRefresh1', 'antiRefresh2', 'antiRefresh3', 'antiRefresh4', 'antiRefresh5'] },
     { label: '堆顶', actions: ['putTop1', 'putTop2', 'putTop3'] },
     { label: '翻底', isFlipBottom: true },
     { label: 'cancel追X', actions: ['cancelChase1', 'cancelChase2', 'cancelChase3', 'cancelChase4', 'cancelChase5'] },
@@ -402,11 +403,16 @@ function App() {
                           
                           {/* 普通动作 */}
                           {!step.flipSegments && (
-                            <div className={`detail-step ${step.cancelled ? 'cancelled' : ''} ${step.skipped ? 'skipped' : ''}`}>
-                              <span className="step-action">{step.action}</span>
-                              <span className="step-detail">{step.detail}</span>
-                              {step.damage > 0 && <span className="step-damage">+{step.damage}</span>}
-                            </div>
+                            <>
+                              <div className={`detail-step ${step.cancelled ? 'cancelled' : ''} ${step.skipped ? 'skipped' : ''}`}>
+                                <span className="step-action">{step.action}</span>
+                                <span className="step-detail">{step.detail}</span>
+                                {step.damage > 0 && <span className="step-damage">+{step.damage}</span>}
+                              </div>
+                              {step.antiRefreshDeck && (
+                                <div className="detail-deck" style={{marginLeft: '12px'}}>新牌库: {step.antiRefreshDeck}</div>
+                              )}
+                            </>
                           )}
                         </div>
                       ))}

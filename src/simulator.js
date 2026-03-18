@@ -34,6 +34,7 @@ class Deck {
     this.gameOver = false;
     this.refreshPenalty = 0; // 累计洗牌罚血
     this.refreshEvents = []; // 记录洗牌事件
+    this.virtualMeat = 0; // 虚拟肉计数（反洗加入的肉，打掉后不进坟场）
     
     // 如果指定了初始牌库，则分配初始牌库和墓地
     if (initialCards !== null && initialClimax !== null) {
@@ -105,7 +106,14 @@ class Deck {
   }
   
   resolveToGraveyard() {
-    this.graveyard.push(...this.resolution);
+    // 把resolution里的牌放入墓地，处理虚拟肉
+    for (const card of this.resolution) {
+      if (card === 0 && this.virtualMeat > 0) {
+        this.virtualMeat--;
+      } else {
+        this.graveyard.push(card);
+      }
+    }
     this.resolution = [];
     this.checkRefresh();
   }
@@ -119,7 +127,24 @@ class Deck {
   
   // 往墓地放牌（并检查是否需要洗牌）
   toGraveyard(card) {
-    this.graveyard.push(card);
+    // 如果是肉且有虚拟肉，则虚拟肉--，不加入坟场
+    if (card === 0 && this.virtualMeat > 0) {
+      this.virtualMeat--;
+    } else {
+      this.graveyard.push(card);
+    }
+    this.checkRefresh();
+  }
+  
+  // 往墓地放多张牌
+  toGraveyardMultiple(cards) {
+    for (const card of cards) {
+      if (card === 0 && this.virtualMeat > 0) {
+        this.virtualMeat--;
+      } else {
+        this.graveyard.push(card);
+      }
+    }
     this.checkRefresh();
   }
   
@@ -232,7 +257,11 @@ const Actions = {
     for (const card of cards) {
       if (card === 0) {
         // 丢掉肉（非潮）
-        deck.graveyard.push(card);
+        if (deck.virtualMeat > 0) {
+          deck.virtualMeat--;
+        } else {
+          deck.graveyard.push(card);
+        }
         discarded++;
       } else {
         // 保留潮
@@ -244,6 +273,24 @@ const Actions = {
     deck.checkRefresh();
     const penalty = deck.getAndResetPenalty();
     return { discardedMeat: discarded, looked: cards, penalty };
+  },
+  
+  // 反洗：往牌库加X张虚拟肉，然后洗牌（不罚血）
+  antiRefresh: (deck, n) => {
+    if (deck.gameOver) {
+      return { addedMeat: 0, penalty: 0, newDeck: [] };
+    }
+    
+    // 加入X张虚拟肉到牌库
+    for (let i = 0; i < n; i++) {
+      deck.cards.push(0);
+    }
+    deck.virtualMeat += n;
+    
+    // 洗牌（不罚血）
+    deck.cards = deck.rng.shuffle(deck.cards);
+    
+    return { addedMeat: n, penalty: 0, newDeck: [...deck.cards] };
   },
   
   flipBottom: (deck, n) => {
@@ -269,7 +316,12 @@ const Actions = {
       
       const card = deck.cards.pop();
       flipped.push(card);
-      deck.graveyard.push(card);
+      // 处理虚拟肉
+      if (card === 0 && deck.virtualMeat > 0) {
+        deck.virtualMeat--;
+      } else {
+        deck.graveyard.push(card);
+      }
       if (card === 1) {
         climaxCount++;
       }
@@ -321,7 +373,12 @@ const Actions = {
       const card = deck.cards.pop();
       flippedBottom.push(card);
       currentSegment.push(card);
-      deck.graveyard.push(card);
+      // 处理虚拟肉
+      if (card === 0 && deck.virtualMeat > 0) {
+        deck.virtualMeat--;
+      } else {
+        deck.graveyard.push(card);
+      }
       if (card === 1) climaxCount++;
     }
     
@@ -369,7 +426,12 @@ const Actions = {
       const card = deck.cards.pop();
       flippedBottom.push(card);
       currentSegment.push(card);
-      deck.graveyard.push(card);
+      // 处理虚拟肉
+      if (card === 0 && deck.virtualMeat > 0) {
+        deck.virtualMeat--;
+      } else {
+        deck.graveyard.push(card);
+      }
       if (card === 1) hasClimax = true;
     }
     
@@ -415,7 +477,12 @@ const Actions = {
       const card = deck.cards.pop();
       flippedBottom.push(card);
       currentSegment.push(card);
-      deck.graveyard.push(card);
+      // 处理虚拟肉
+      if (card === 0 && deck.virtualMeat > 0) {
+        deck.virtualMeat--;
+      } else {
+        deck.graveyard.push(card);
+      }
       if (card === 1) hasClimax = true;
     }
     
@@ -461,7 +528,12 @@ const Actions = {
       const card = deck.cards.pop();
       flippedBottom.push(card);
       currentSegment.push(card);
-      deck.graveyard.push(card);
+      // 处理虚拟肉
+      if (card === 0 && deck.virtualMeat > 0) {
+        deck.virtualMeat--;
+      } else {
+        deck.graveyard.push(card);
+      }
       if (card === 1) climaxCount++;
     }
     
@@ -523,7 +595,12 @@ const Actions = {
       }
       flipped.push(card);
       currentSegment.push(card);
-      deck.graveyard.push(card);
+      // 处理虚拟肉
+      if (card === 0 && deck.virtualMeat > 0) {
+        deck.virtualMeat--;
+      } else {
+        deck.graveyard.push(card);
+      }
       
       // 牌库空了立即洗牌
       if (deck.cards.length === 0 && deck.graveyard.length > 0) {
@@ -576,6 +653,11 @@ export const ActionDefinitions = {
   antiMocha1: { name: "反摩卡1", execute: (deck) => Actions.lookTopDiscardMeat(deck, 1) },
   antiMocha2: { name: "反摩卡2", execute: (deck) => Actions.lookTopDiscardMeat(deck, 2) },
   antiMocha3: { name: "反摩卡3", execute: (deck) => Actions.lookTopDiscardMeat(deck, 3) },
+  antiRefresh1: { name: "反洗1", execute: (deck) => Actions.antiRefresh(deck, 1) },
+  antiRefresh2: { name: "反洗2", execute: (deck) => Actions.antiRefresh(deck, 2) },
+  antiRefresh3: { name: "反洗3", execute: (deck) => Actions.antiRefresh(deck, 3) },
+  antiRefresh4: { name: "反洗4", execute: (deck) => Actions.antiRefresh(deck, 4) },
+  antiRefresh5: { name: "反洗5", execute: (deck) => Actions.antiRefresh(deck, 5) },
   putTop1: { name: "堆顶1", execute: (deck) => Actions.putTop(deck, 1) },
   putTop2: { name: "堆顶2", execute: (deck) => Actions.putTop(deck, 2) },
   putTop3: { name: "堆顶3", execute: (deck) => Actions.putTop(deck, 3) },
@@ -795,6 +877,10 @@ export class Simulator {
           detail += ' → 无肉不丢';
         }
       }
+      // 反洗：加肉洗牌
+      else if (result.addedMeat !== undefined) {
+        detail = '加入' + result.addedMeat + '张肉并洗牌';
+      }
       // 打/翻：翻出哪些牌
       else if (result.flipped && result.flipped.length > 0) {
         detail = '翻出: ' + formatCards(result.flipped);
@@ -828,7 +914,8 @@ export class Simulator {
         refreshEvents: deck.getAndResetRefreshEvents().map(cards => formatCards(cards)),
         penalty: result.penalty || 0,
         flipSegments: flipSegments,
-        hitResultsDetail: hitResultsDetail
+        hitResultsDetail: hitResultsDetail,
+        antiRefreshDeck: result.newDeck ? formatCards(result.newDeck) : null
       });
       
       lastResult = result;
