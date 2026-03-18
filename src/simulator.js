@@ -219,6 +219,33 @@ const Actions = {
     return { discardedClimax: discarded, looked: cards, penalty };
   },
   
+  // 对手反摩卡：看顶X张，丢掉肉（留下潮）
+  lookTopDiscardMeat: (deck, n) => {
+    if (deck.gameOver || deck.size() === 0) {
+      return { discardedMeat: 0, looked: [], penalty: 0 };
+    }
+    
+    const cards = deck.removeTop(n);
+    let discarded = 0;
+    const kept = [];
+    
+    for (const card of cards) {
+      if (card === 0) {
+        // 丢掉肉（非潮）
+        deck.graveyard.push(card);
+        discarded++;
+      } else {
+        // 保留潮
+        kept.push(card);
+      }
+    }
+    
+    deck.putOnTop(kept);
+    deck.checkRefresh();
+    const penalty = deck.getAndResetPenalty();
+    return { discardedMeat: discarded, looked: cards, penalty };
+  },
+  
   flipBottom: (deck, n) => {
     if (deck.gameOver) {
       return { climaxCount: 0, penalty: 0, flipped: [] };
@@ -546,6 +573,9 @@ export const ActionDefinitions = {
   mocha2: { name: "摩卡2", execute: (deck) => Actions.lookTopDiscardClimax(deck, 2) },
   mocha3: { name: "摩卡3", execute: (deck) => Actions.lookTopDiscardClimax(deck, 3) },
   mocha4: { name: "摩卡4", execute: (deck) => Actions.lookTopDiscardClimax(deck, 4) },
+  antiMocha1: { name: "反摩卡1", execute: (deck) => Actions.lookTopDiscardMeat(deck, 1) },
+  antiMocha2: { name: "反摩卡2", execute: (deck) => Actions.lookTopDiscardMeat(deck, 2) },
+  antiMocha3: { name: "反摩卡3", execute: (deck) => Actions.lookTopDiscardMeat(deck, 3) },
   putTop1: { name: "堆顶1", execute: (deck) => Actions.putTop(deck, 1) },
   putTop2: { name: "堆顶2", execute: (deck) => Actions.putTop(deck, 2) },
   putTop3: { name: "堆顶3", execute: (deck) => Actions.putTop(deck, 3) },
@@ -748,12 +778,21 @@ export class Simulator {
         }
       }
       // 摩卡：看了哪些牌
-      else if (result.looked && result.looked.length > 0) {
+      else if (result.looked && result.looked.length > 0 && result.discardedClimax !== undefined) {
         detail = '看: ' + formatCards(result.looked);
         if (result.discardedClimax > 0) {
           detail += ' → 丢掉' + result.discardedClimax + '潮';
         } else {
-          detail += ' → 无潮';
+          detail += ' → 无潮不丢';
+        }
+      }
+      // 对手反摩卡：看了哪些牌，丢肉
+      else if (result.looked && result.looked.length > 0 && result.discardedMeat !== undefined) {
+        detail = '看: ' + formatCards(result.looked);
+        if (result.discardedMeat > 0) {
+          detail += ' → 丢掉' + result.discardedMeat + '肉';
+        } else {
+          detail += ' → 无肉不丢';
         }
       }
       // 打/翻：翻出哪些牌

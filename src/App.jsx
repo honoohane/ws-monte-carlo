@@ -21,11 +21,16 @@ function App() {
   const actionGroups = [
     { label: '常规伤害', actions: ['hit1', 'hit2', 'hit3', 'hit4', 'hit5', 'hit6', 'hit7'] },
     { label: '真伤', actions: ['trueDmg1', 'trueDmg2', 'trueDmg3'] },
-    { label: '摩卡', actions: ['mocha1', 'mocha2', 'mocha3'] },
+    { label: '摩卡', isMocha: true },
     { label: '堆顶', actions: ['putTop1', 'putTop2', 'putTop3'] },
     { label: '翻底', isFlipBottom: true },
     { label: 'cancel追X', actions: ['cancelChase1', 'cancelChase2', 'cancelChase3', 'cancelChase4', 'cancelChase5'] },
     { label: '打中追X', actions: ['hitChase1', 'hitChase2', 'hitChase3', 'hitChase4', 'hitChase5'] },
+  ]
+
+  const mochaTabs = [
+    { label: '摩卡X', prefix: 'mocha', count: 3 },
+    { label: '对手反摩卡X', prefix: 'antiMocha', count: 3 },
   ]
 
   const flipBottomTabs = [
@@ -175,6 +180,30 @@ function App() {
                               onClick={() => addAction(tab.prefix + n)}
                             >
                               翻{n}{tab.label.replace('翻底', '')}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : group.isMocha ? (
+              <div key={group.label} className="action-group mocha-group">
+                <span className="group-label">{group.label}</span>
+                <div className="flip-bottom-tabs">
+                  {mochaTabs.map(tab => (
+                    <div key={tab.label} className="dropdown-tab">
+                      <span className="dropdown-tab-label">{tab.label}</span>
+                      <div className="dropdown-menu">
+                        <div className="dropdown-menu-inner">
+                          {Array.from({length: tab.count}, (_, i) => i + 1).map(n => (
+                            <button
+                              key={n}
+                              className="dropdown-item"
+                              onClick={() => addAction(tab.prefix + n)}
+                            >
+                              {tab.label.replace('X', n)}
                             </button>
                           ))}
                         </div>
