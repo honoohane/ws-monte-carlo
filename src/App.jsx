@@ -22,6 +22,9 @@ function App() {
 
   const [dragIndex, setDragIndex] = useState(null)
   const [optionsPanelOpen, setOptionsPanelOpen] = useState(false)
+  
+  // 保存运行时的牌库配置（用于显示）
+  const [lastSimConfig, setLastSimConfig] = useState(null)
 
   const actionGroups = [
     { label: '常规伤害', actions: ['hit1', 'hit2', 'hit3', 'hit4', 'hit5', 'hit6', 'hit7'] },
@@ -165,12 +168,18 @@ function App() {
         useCustomDeck ? customDeckSize : 25, 
         useCustomDeck ? customDeckClimax : 7, 
         flow, 
-        5,
+        10,
         useInitialDeck ? initialDeck : null,
         useInitialDeck ? initialClimax : null
       )
       setResults(result)
       setDetailedRuns(detailed)
+      setLastSimConfig({
+        deckSize: useCustomDeck ? customDeckSize : 25,
+        deckClimax: useCustomDeck ? customDeckClimax : 7,
+        initialDeck: useInitialDeck ? initialDeck : null,
+        initialClimax: useInitialDeck ? initialClimax : null
+      })
       setStatus('完成！10000次模拟')
     } catch (e) {
       setStatus('错误: ' + e.message)
@@ -470,11 +479,11 @@ function App() {
                 className="details-toggle"
                 onClick={() => setDetailsOpen(!detailsOpen)}
               >
-                {detailsOpen ? '▼' : '▶'} 查看前5次模拟详情 
-                {useInitialDeck 
-                  ? `（初始${initialDeck}张${initialClimax}潮 → 洗牌后25张7潮）`
-                  : '（25张7潮）'
-                }
+                {detailsOpen ? '▼' : '▶'} 查看前10次模拟详情 
+                {lastSimConfig && (lastSimConfig.initialDeck !== null
+                  ? `（${lastSimConfig.deckSize}张${lastSimConfig.deckClimax}潮，初始${lastSimConfig.initialDeck}张${lastSimConfig.initialClimax}潮）`
+                  : `（${lastSimConfig.deckSize}张${lastSimConfig.deckClimax}潮）`
+                )}
               </button>
               {detailsOpen && (
                 <div className="details-content">
