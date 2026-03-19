@@ -862,12 +862,15 @@ export class Simulator {
   simulate(totalCards, climaxCount, actionSequence, runs = 10000, initialCards = null, initialClimax = null) {
     const rng = new SeededRandom(this.seed);
     let totalDamage = 0;
+    const distribution = {}; // 伤害分布统计
     
     for (let i = 0; i < runs; i++) {
-      totalDamage += this.runOnce(totalCards, climaxCount, actionSequence, rng, initialCards, initialClimax);
+      const damage = this.runOnce(totalCards, climaxCount, actionSequence, rng, initialCards, initialClimax);
+      totalDamage += damage;
+      distribution[damage] = (distribution[damage] || 0) + 1;
     }
     
-    return totalDamage / runs;
+    return { avg: totalDamage / runs, distribution };
   }
   
   generateTable(actionSequence, runs = 10000, initialCards = null, initialClimax = null) {

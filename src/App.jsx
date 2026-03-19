@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Simulator, ActionDefinitions } from './simulator'
 import './App.css'
 
@@ -582,6 +582,21 @@ function App() {
 }
 
 function ResultTable({ deckRange, climaxRange, results }) {
+  const [hoverCell, setHoverCell] = useState(null)
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+  const popupRef = useRef(null)
+  
+  // 滚动或触摸滑动时关闭弹窗
+  useEffect(() => {
+    const close = () => setHoverCell(null)
+    window.addEventListener('scroll', close, true)
+    window.addEventListener('touchmove', close)
+    return () => {
+      window.removeEventListener('scroll', close, true)
+      window.removeEventListener('touchmove', close)
+    }
+  }, [])
+  
   const isHighlight = (deck, climax) => {
     return deck >= 21 && deck <= 30 && climax >= 5 && climax <= 8
   }
@@ -592,8 +607,8 @@ function ResultTable({ deckRange, climaxRange, results }) {
     for (const cx of climaxRange) {
       const v = results[deck][cx]
       if (v !== null) {
-        if (v < minVal) minVal = v
-        if (v > maxVal) maxVal = v
+        if (v.avg < minVal) minVal = v.avg
+        if (v.avg > maxVal) maxVal = v.avg
       }
     }
   }
@@ -601,7 +616,8 @@ function ResultTable({ deckRange, climaxRange, results }) {
   // 根据数值大小给背景色渐变：微微变色，低->深蓝, 高->浅蓝
   const getValueStyle = (value) => {
     if (value === null) return { backgroundColor: '#1a1a2e' }
-    const ratio = maxVal > minVal ? (value - minVal) / (maxVal - minVal) : 0.5
+    const avg = value.avg
+    const ratio = maxVal > minVal ? (avg - minVal) / (maxVal - minVal) : 0.5
     // 深蓝(20,25,40) -> 浅蓝(60,105,140)
     const r = Math.round(20 + ratio * 40)
     const g = Math.round(25 + ratio * 80)
@@ -642,8 +658,15 @@ function ResultTable({ deckRange, climaxRange, results }) {
                   key={cx} 
                   className={classes.join(' ')}
                   style={getValueStyle(value)}
+                  onMouseMove={(e) => {
+                    if (value) {
+                      setHoverCell({ deck, cx, value })
+                      setMousePos({ x: e.clientX, y: e.clientY })
+                    }
+                  }}
+                  onMouseLeave={() => setHoverCell(null)}
                 >
-                  {value === null ? '-' : value.toFixed(2)}
+                  {value === null ? '-' : value.avg.toFixed(2)}
                 </td>
               )
             })}
@@ -652,6 +675,78 @@ function ResultTable({ deckRange, climaxRange, results }) {
       </tbody>
     </table>
       <div className="table-note">蓝框内为常见压缩</div>
+      
+      {hoverCell && (() => {
+        // 计算弹框位置，避免超出视窗
+        const popupWidth = 300
+        const popupHeight = popupRef.current?.offsetHeight || 450
+        const windowWidth = window.innerWidth
+        const windowHeight = window.innerHeight
+        const distanceToBottom = windowHeight - mousePos.y
+        
+        let left = mousePos.x + 15
+        let top = mousePos.y + 15
+        
+        // 如果右侧放不下，放左边
+        if (left + popupWidth > windowWidth - 5) {
+          left = mousePos.x - popupWidth - 15
+        }
+        // 防止左边超出屏幕
+        if (left < 5) left = 5
+        
+        // 鼠标到屏幕底部的距离小于弹框高度时，用bottom定位
+        let posStyle = distanceToBottom < popupHeight * 1.1
+          ? { bottom: Math.max(5, distanceToBottom + 15) }
+          : { top: Math.min(top, windowHeight - popupHeight - 5) }
+        
+        return (
+          <div 
+            className="distribution-popup"
+            ref={popupRef}
+            style={{ left, ...posStyle }}
+          >
+            <div className="popup-header">{hoverCell.deck}张{hoverCell.cx}潮 - 伤害分布</div>
+            {(() => {
+              const dist = hoverCell.value.distribution
+              const total = Object.values(dist).reduce((a, b) => a + b, 0)
+              // 按次数排序取TOP3
+              const top3 = Object.entries(dist)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 3)
+              return (
+                <div className="popup-ci">
+                  <div>最大概率：</div>
+                  <div style={{display:'flex', gap:'8px'}}>
+                    {top3.map(([dmg, cnt], i) => (
+                      <span key={dmg}>{i > 0 && '\u00A0|\u00A0\u00A0\u00A0'}{dmg}伤: {(cnt/total*100).toFixed(1)}%</span>
+                    ))}
+                  </div>
+                </div>
+              )
+            })()}
+          <div className="popup-chart">
+            {(() => {
+              const dist = hoverCell.value.distribution
+              const maxCount = Math.max(...Object.values(dist))
+              const damages = Object.keys(dist).map(Number).sort((a, b) => a - b)
+              const total = Object.values(dist).reduce((a, b) => a + b, 0)
+              return damages.map(dmg => (
+                <div key={dmg} className="chart-bar-container">
+                  <div className="chart-label">{dmg}</div>
+                  <div className="chart-bar-wrapper">
+                    <div 
+                      className="chart-bar" 
+                      style={{ width: `${(dist[dmg] / maxCount) * 100}%` }}
+                    />
+                  </div>
+                  <div className="chart-percent">{((dist[dmg] / total) * 100).toFixed(1)}% ({dist[dmg]})</div>
+                </div>
+              ))
+            })()}
+          </div>
+        </div>
+        )
+      })()}
     </div>
   )
 }
