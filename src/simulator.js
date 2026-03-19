@@ -59,7 +59,7 @@ class Deck {
     }
   }
   
-  // 洗牌：墓地洗回牌库，罚1血
+  // 洗牌：墓地洗回牌库，罚1血（从牌顶移1张进墓地）
   refresh() {
     if (this.graveyard.length === 0) {
       this.gameOver = true;
@@ -67,8 +67,17 @@ class Deck {
     }
     this.cards = this.rng.shuffle([...this.graveyard]);
     this.graveyard = [];
+    const deckAfterShuffle = [...this.cards]; // 记录洗牌后牌库（罚血前）
+    
+    // 罚血：从牌顶抽1张进墓地
+    let penaltyCard = null;
+    if (this.cards.length > 0) {
+      penaltyCard = this.cards.shift();
+      this.graveyard.push(penaltyCard);
+    }
+    this.refreshEvents.push({ deck: deckAfterShuffle, penaltyCard });
+    this.lastPenaltyCard = penaltyCard; // 暂存罚血的牌
     this.refreshPenalty++;
-    this.refreshEvents.push([...this.cards]); // 记录洗牌后牌库
     return true;
   }
   
@@ -199,7 +208,7 @@ const Actions = {
         flipSegments.push({ cards: [...currentSegment] });
         currentSegment = [];
         deck.refresh();
-        flipSegments.push({ refresh: true, newDeck: [...deck.cards] });
+        flipSegments.push({ refresh: true, newDeck: [...deck.cards], penaltyCard: deck.lastPenaltyCard });
       }
       
       if (card === 1) {
@@ -308,10 +317,7 @@ const Actions = {
           deck.gameOver = true;
           break;
         }
-        deck.cards = deck.rng.shuffle([...deck.graveyard]);
-        deck.graveyard = [];
-        deck.refreshPenalty++;
-        deck.refreshEvents.push([...deck.cards]);
+        deck.refresh();
       }
       
       const card = deck.cards.pop();
@@ -363,11 +369,9 @@ const Actions = {
           flipSegments.push({ cards: [...currentSegment] });
           currentSegment = [];
         }
-        deck.cards = deck.rng.shuffle([...deck.graveyard]);
-        deck.graveyard = [];
-        deck.refreshPenalty++;
+        deck.refresh();
         // 记录洗牌事件
-        flipSegments.push({ refresh: true, newDeck: [...deck.cards] });
+        flipSegments.push({ refresh: true, newDeck: [...deck.cards], penaltyCard: deck.lastPenaltyCard });
       }
       
       const card = deck.cards.pop();
@@ -387,6 +391,12 @@ const Actions = {
       flipSegments.push({ cards: [...currentSegment] });
     }
     
+    // 翻底结束后，如果牌库空了就立刻洗牌（在打之前）
+    if (deck.cards.length === 0 && deck.graveyard.length > 0) {
+      deck.refresh();
+      flipSegments.push({ refresh: true, newDeck: [...deck.cards], penaltyCard: deck.lastPenaltyCard });
+    }
+    
     if (climaxCount === 0) {
       deck.checkRefresh();
       const penalty = deck.getAndResetPenalty();
@@ -394,7 +404,10 @@ const Actions = {
     }
     
     const hitResult = Actions.hit(deck, climaxCount);
-    return { ...hitResult, flippedBottom, flipSegments, climaxCount };
+    // 只合并打过程中的洗牌事件（不合并翻出的牌，因为已经在detail里显示）
+    const hitRefreshEvents = (hitResult.flipSegments || []).filter(seg => seg.refresh);
+    const allFlipSegments = [...flipSegments, ...hitRefreshEvents];
+    return { ...hitResult, flippedBottom, flipSegments: allFlipSegments, climaxCount };
   },
 
   // 翻底打1：翻底n张，有潮就打1
@@ -417,10 +430,8 @@ const Actions = {
           flipSegments.push({ cards: [...currentSegment] });
           currentSegment = [];
         }
-        deck.cards = deck.rng.shuffle([...deck.graveyard]);
-        deck.graveyard = [];
-        deck.refreshPenalty++;
-        flipSegments.push({ refresh: true, newDeck: [...deck.cards] });
+        deck.refresh();
+        flipSegments.push({ refresh: true, newDeck: [...deck.cards], penaltyCard: deck.lastPenaltyCard });
       }
       
       const card = deck.cards.pop();
@@ -439,6 +450,12 @@ const Actions = {
       flipSegments.push({ cards: [...currentSegment] });
     }
     
+    // 翻底结束后，如果牌库空了就立刻洗牌（在打之前）
+    if (deck.cards.length === 0 && deck.graveyard.length > 0) {
+      deck.refresh();
+      flipSegments.push({ refresh: true, newDeck: [...deck.cards], penaltyCard: deck.lastPenaltyCard });
+    }
+    
     if (!hasClimax) {
       deck.checkRefresh();
       const penalty = deck.getAndResetPenalty();
@@ -446,7 +463,10 @@ const Actions = {
     }
     
     const hitResult = Actions.hit(deck, 1);
-    return { ...hitResult, flippedBottom, flipSegments };
+    // 只合并打过程中的洗牌事件
+    const hitRefreshEvents = (hitResult.flipSegments || []).filter(seg => seg.refresh);
+    const allFlipSegments = [...flipSegments, ...hitRefreshEvents];
+    return { ...hitResult, flippedBottom, flipSegments: allFlipSegments };
   },
 
   // 翻底打2：翻底n张，有潮就打2
@@ -468,10 +488,8 @@ const Actions = {
           flipSegments.push({ cards: [...currentSegment] });
           currentSegment = [];
         }
-        deck.cards = deck.rng.shuffle([...deck.graveyard]);
-        deck.graveyard = [];
-        deck.refreshPenalty++;
-        flipSegments.push({ refresh: true, newDeck: [...deck.cards] });
+        deck.refresh();
+        flipSegments.push({ refresh: true, newDeck: [...deck.cards], penaltyCard: deck.lastPenaltyCard });
       }
       
       const card = deck.cards.pop();
@@ -490,6 +508,12 @@ const Actions = {
       flipSegments.push({ cards: [...currentSegment] });
     }
     
+    // 翻底结束后，如果牌库空了就立刻洗牌（在打之前）
+    if (deck.cards.length === 0 && deck.graveyard.length > 0) {
+      deck.refresh();
+      flipSegments.push({ refresh: true, newDeck: [...deck.cards], penaltyCard: deck.lastPenaltyCard });
+    }
+    
     if (!hasClimax) {
       deck.checkRefresh();
       const penalty = deck.getAndResetPenalty();
@@ -497,7 +521,10 @@ const Actions = {
     }
     
     const hitResult = Actions.hit(deck, 2);
-    return { ...hitResult, flippedBottom, flipSegments };
+    // 只合并打过程中的洗牌事件
+    const hitRefreshEvents = (hitResult.flipSegments || []).filter(seg => seg.refresh);
+    const allFlipSegments = [...flipSegments, ...hitRefreshEvents];
+    return { ...hitResult, flippedBottom, flipSegments: allFlipSegments };
   },
 
   // 翻底打X个1：翻底n张，翻到几个潮就打几次1（每次独立判定）
@@ -519,10 +546,8 @@ const Actions = {
           flipSegments.push({ cards: [...currentSegment] });
           currentSegment = [];
         }
-        deck.cards = deck.rng.shuffle([...deck.graveyard]);
-        deck.graveyard = [];
-        deck.refreshPenalty++;
-        flipSegments.push({ refresh: true, newDeck: [...deck.cards] });
+        deck.refresh();
+        flipSegments.push({ refresh: true, newDeck: [...deck.cards], penaltyCard: deck.lastPenaltyCard });
       }
       
       const card = deck.cards.pop();
@@ -541,6 +566,12 @@ const Actions = {
       flipSegments.push({ cards: [...currentSegment] });
     }
     
+    // 翻底结束后，如果牌库空了就立刻洗牌（在打之前）
+    if (deck.cards.length === 0 && deck.graveyard.length > 0) {
+      deck.refresh();
+      flipSegments.push({ refresh: true, newDeck: [...deck.cards], penaltyCard: deck.lastPenaltyCard });
+    }
+    
     if (climaxCount === 0) {
       deck.checkRefresh();
       const penalty = deck.getAndResetPenalty();
@@ -552,6 +583,7 @@ const Actions = {
     let totalDamage = 0;
     let totalPenalty = 0;
     const allFlipped = [];
+    let hitRefreshEvents = [];
     
     for (let i = 0; i < climaxCount; i++) {
       if (deck.gameOver) break;
@@ -560,15 +592,20 @@ const Actions = {
       if (hitResult.damage) totalDamage += hitResult.damage;
       if (hitResult.penalty) totalPenalty += hitResult.penalty;
       if (hitResult.flipped) allFlipped.push(...hitResult.flipped);
+      // 只收集洗牌事件
+      if (hitResult.flipSegments) {
+        hitRefreshEvents.push(...hitResult.flipSegments.filter(seg => seg.refresh));
+      }
     }
     
+    const allFlipSegments = [...flipSegments, ...hitRefreshEvents];
     return { 
       damage: totalDamage, 
       cancelled: hitResults.length > 0 && hitResults[hitResults.length - 1].cancelled,
       penalty: totalPenalty, 
       flipped: allFlipped, 
       flippedBottom, 
-      flipSegments, 
+      flipSegments: allFlipSegments, 
       hitResults,
       climaxCount
     };
@@ -896,7 +933,7 @@ export class Simulator {
       if (result.hitResults && result.hitResults.length > 0) {
         flipSegments = result.flipSegments.map(seg => {
           if (seg.refresh) {
-            return { refresh: true, newDeck: formatCards(seg.newDeck) };
+            return { refresh: true, newDeck: formatCards(seg.newDeck), penaltyCard: seg.penaltyCard === 1 ? '潮' : '肉' };
           } else {
             return { cards: formatCards(seg.cards), isFlipBottom: true };
           }
@@ -916,7 +953,7 @@ export class Simulator {
       else if (result.flippedBottom && result.flippedBottom.length > 0) {
         flipSegments = result.flipSegments.map(seg => {
           if (seg.refresh) {
-            return { refresh: true, newDeck: formatCards(seg.newDeck) };
+            return { refresh: true, newDeck: formatCards(seg.newDeck), penaltyCard: seg.penaltyCard === 1 ? '潮' : '肉' };
           } else {
             return { cards: formatCards(seg.cards), isFlipBottom: true };
           }
@@ -938,7 +975,7 @@ export class Simulator {
       else if (result.flipSegments && result.flipSegments.some(seg => seg.refresh)) {
         flipSegments = result.flipSegments.map(seg => {
           if (seg.refresh) {
-            return { refresh: true, newDeck: formatCards(seg.newDeck) };
+            return { refresh: true, newDeck: formatCards(seg.newDeck), penaltyCard: seg.penaltyCard === 1 ? '潮' : '肉' };
           } else {
             return { cards: formatCards(seg.cards), isHit: true };
           }
@@ -1018,7 +1055,10 @@ export class Simulator {
         damage: stepDamage,
         cancelled: result.cancelled || false,
         skipped: result.skipped || false,
-        refreshEvents: deck.getAndResetRefreshEvents().map(cards => formatCards(cards)),
+        refreshEvents: deck.getAndResetRefreshEvents().map(evt => ({
+          deck: formatCards(evt.deck),
+          penaltyCard: evt.penaltyCard === 1 ? '潮' : '肉'
+        })),
         penalty: result.penalty || 0,
         flipSegments: flipSegments,
         hitResultsDetail: hitResultsDetail,

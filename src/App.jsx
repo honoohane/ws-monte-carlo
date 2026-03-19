@@ -330,13 +330,15 @@ function App() {
               <input 
                 type="number" 
                 min="1" 
-                max="35"
+                max="50"
                 value={initialDeck} 
                 onChange={(e) => setInitialDeck(parseInt(e.target.value) || '')}
                 onBlur={(e) => {
-                  const val = Math.min(35, Math.max(1, parseInt(e.target.value) || 1))
+                  let val = Math.min(50, Math.max(1, parseInt(e.target.value) || 1))
+                  // 如果同时启用了完整牌库，初始牌库不能超过完整牌库
+                  if (useCustomDeck && val > customDeckSize) val = customDeckSize
                   setInitialDeck(val)
-                  if (initialClimax > val) setInitialClimax(val)
+                  if (initialClimax > val) setInitialClimax(Math.min(val, 8))
                 }}
                 disabled={!useInitialDeck}
               />
@@ -344,11 +346,14 @@ function App() {
               <input 
                 type="number" 
                 min="0" 
-                max={initialDeck}
+                max="8"
                 value={initialClimax} 
                 onChange={(e) => setInitialClimax(parseInt(e.target.value) || '')}
                 onBlur={(e) => {
-                  const val = Math.min(initialDeck, Math.max(0, parseInt(e.target.value) || 0))
+                  let maxClimax = Math.min(initialDeck, 8)
+                  // 如果同时启用了完整牌库，初始潮不能超过完整牌库的潮
+                  if (useCustomDeck && maxClimax > customDeckClimax) maxClimax = customDeckClimax
+                  const val = Math.min(maxClimax, Math.max(0, parseInt(e.target.value) || 0))
                   setInitialClimax(val)
                 }}
                 disabled={!useInitialDeck}
@@ -370,14 +375,17 @@ function App() {
             <div className="option-row initial-deck-row">
               <input 
                 type="number" 
-                min="1" 
+                min="10" 
                 max="50"
                 value={customDeckSize} 
                 onChange={(e) => setCustomDeckSize(parseInt(e.target.value) || '')}
                 onBlur={(e) => {
-                  const val = Math.min(50, Math.max(1, parseInt(e.target.value) || 1))
+                  const val = Math.min(50, Math.max(10, parseInt(e.target.value) || 10))
                   setCustomDeckSize(val)
-                  if (customDeckClimax > val) setCustomDeckClimax(val)
+                  if (customDeckClimax > Math.min(val, 8)) setCustomDeckClimax(Math.min(val, 8))
+                  // 如果初始牌库启用了，约束初始牌库不能超过完整牌库
+                  if (useInitialDeck && initialDeck > val) setInitialDeck(val)
+                  if (useInitialDeck && initialClimax > customDeckClimax) setInitialClimax(customDeckClimax)
                 }}
                 disabled={!useCustomDeck}
               />
@@ -385,12 +393,14 @@ function App() {
               <input 
                 type="number" 
                 min="0" 
-                max={customDeckSize}
+                max="8"
                 value={customDeckClimax} 
                 onChange={(e) => setCustomDeckClimax(parseInt(e.target.value) || '')}
                 onBlur={(e) => {
-                  const val = Math.min(customDeckSize, Math.max(0, parseInt(e.target.value) || 0))
+                  const val = Math.min(Math.min(customDeckSize, 8), Math.max(0, parseInt(e.target.value) || 0))
                   setCustomDeckClimax(val)
+                  // 如果初始牌库启用了，约束初始潮不能超过完整牌库的潮
+                  if (useInitialDeck && initialClimax > val) setInitialClimax(val)
                 }}
                 disabled={!useCustomDeck}
               />
@@ -480,11 +490,16 @@ function App() {
                       {run.steps.map((step, j) => (
                         <div key={j}>
                           {/* 普通洗牌事件（非翻底） */}
-                          {!step.flipSegments && step.refreshEvents && step.refreshEvents.length > 0 && step.refreshEvents.map((deckState, k) => (
-                            <div key={`refresh-${k}`} className="detail-refresh">
-                              <span>⚠ 洗牌！新牌库: {deckState}</span>
-                              <span className="step-damage">+1</span>
-                            </div>
+                          {!step.flipSegments && step.refreshEvents && step.refreshEvents.length > 0 && step.refreshEvents.map((evt, k) => (
+                            <React.Fragment key={`refresh-${k}`}>
+                              <div className="detail-refresh">
+                                <span>⚠ 洗牌！新牌库: {evt.deck}</span>
+                              </div>
+                              <div className="detail-refresh">
+                                <span>罚血: {evt.penaltyCard}</span>
+                                <span className="step-damage">+1</span>
+                              </div>
+                            </React.Fragment>
                           ))}
                           
                           {/* 有分段显示（打X中间洗牌、翻底打X等） */}
@@ -496,7 +511,7 @@ function App() {
                               {step.flipSegments.map((seg, k) => (
                                 seg.refresh ? (
                                   <div key={k} className="detail-refresh">
-                                    <span>⚠ 洗牌！新牌库: {seg.newDeck}</span>
+                                    <span>⚠ 洗牌！新牌库: {seg.newDeck}（罚血: {seg.penaltyCard}）</span>
                                     <span className="step-damage">+1</span>
                                   </div>
                                 ) : (
