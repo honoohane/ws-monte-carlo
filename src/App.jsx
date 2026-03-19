@@ -9,6 +9,7 @@ function App() {
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [status, setStatus] = useState('')
   const [isRunning, setIsRunning] = useState(false)
+  const [progress, setProgress] = useState(0) // 0-100
 
   // 初始牌库（模拟对面快洗牌的场景）
   const [useInitialDeck, setUseInitialDeck] = useState(false)
@@ -22,6 +23,8 @@ function App() {
 
   const [dragIndex, setDragIndex] = useState(null)
   const [optionsPanelOpen, setOptionsPanelOpen] = useState(false)
+  const [useCustomSimRuns, setUseCustomSimRuns] = useState(false)
+  const [simRuns, setSimRuns] = useState(10000) // 模拟次数
   
   // 保存运行时的牌库配置（用于显示）
   const [lastSimConfig, setLastSimConfig] = useState(null)
@@ -150,17 +153,19 @@ function App() {
     }
 
     setIsRunning(true)
-    setStatus('模拟中...')
+    setStatus('')
+    setProgress(0)
 
     await new Promise(resolve => setTimeout(resolve, 10))
 
     try {
       const simulator = new Simulator(42)
-      const result = simulator.generateTable(
+      const result = await simulator.generateTable(
         flow, 
-        10000,
+        useCustomSimRuns ? simRuns : 10000,
         useInitialDeck ? initialDeck : null,
-        useInitialDeck ? initialClimax : null
+        useInitialDeck ? initialClimax : null,
+        (p) => setProgress(Math.round(p))
       )
       // 详细模拟用随机种子
       const detailSimulator = new Simulator(Date.now())
@@ -180,7 +185,8 @@ function App() {
         initialDeck: useInitialDeck ? initialDeck : null,
         initialClimax: useInitialDeck ? initialClimax : null
       })
-      setStatus('完成！10000次模拟')
+      setStatus('')
+      setProgress(100)
     } catch (e) {
       setStatus('错误: ' + e.message)
       console.error(e)
@@ -416,6 +422,34 @@ function App() {
               <span>潮</span>
             </div>
           </div>
+          
+          <div className={`option-group ${useCustomSimRuns ? '' : 'disabled'}`}>
+            <div className="option-row">
+              <label 
+                className={`custom-checkbox-label ${useCustomSimRuns ? 'checked' : ''}`}
+                onClick={() => setUseCustomSimRuns(!useCustomSimRuns)}
+              >
+                <span className="custom-checkbox"></span>
+                自定义模拟次数
+              </label>
+            </div>
+            <div className="option-row initial-deck-row">
+              <input 
+                type="number" 
+                min="100" 
+                max="100000"
+                step="1000"
+                value={simRuns} 
+                onChange={(e) => setSimRuns(parseInt(e.target.value) || '')}
+                onBlur={(e) => {
+                  const val = Math.min(100000, Math.max(100, parseInt(e.target.value) || 10000))
+                  setSimRuns(val)
+                }}
+                disabled={!useCustomSimRuns}
+              />
+              <span>次</span>
+            </div>
+          </div>
         </div>
         
         {optionsPanelOpen && <div className="options-overlay" onClick={() => setOptionsPanelOpen(false)}></div>}
@@ -463,8 +497,11 @@ function App() {
           className="run-btn" 
           onClick={runSimulation}
           disabled={isRunning}
+          style={progress > 0 ? {
+            background: `linear-gradient(90deg, #4ecdc4 ${progress}%, #2a2a4e ${progress}%)`
+          } : {}}
         >
-          运行模拟 (10000次)
+          {isRunning ? `模拟中... ${progress}%` : `运行模拟 (${useCustomSimRuns ? simRuns : 10000}次)`}
         </button>
         {status && <div className="status">{status}</div>}
       </div>
@@ -677,9 +714,13 @@ function ResultTable({ deckRange, climaxRange, results }) {
       <div className="table-note">蓝框内为常见压缩</div>
       
       {hoverCell && (() => {
+        // 根据数据条数计算弹框高度
+        const barCount = Object.keys(hoverCell.value.distribution).length
+        const estimatedHeight = 100 + barCount * 24 // 标题等80+padding20，每条24px
+        
         // 计算弹框位置，避免超出视窗
         const popupWidth = 300
-        const popupHeight = popupRef.current?.offsetHeight || 450
+        const popupHeight = popupRef.current?.offsetHeight || estimatedHeight
         const windowWidth = window.innerWidth
         const windowHeight = window.innerHeight
         const distanceToBottom = windowHeight - mousePos.y

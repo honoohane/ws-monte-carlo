@@ -80,7 +80,7 @@ input[type="number"] {
 }
 
 .option-row input[type="number"] {
-  width: 50px;
+  width: 60px;
   padding: 4px 6px;
   background: #16213e;
   border: 1px solid #2a2a4e;
@@ -158,6 +158,11 @@ input[type="number"] {
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid #2a2a4e;
+}
+
+.option-label {
+  color: #888;
+  font-size: 13px;
 }
 
 .option-group.disabled .initial-deck-row {
@@ -409,6 +414,20 @@ input[type="number"] {
   margin-top: 10px;
   text-align: center;
   color: #95a5a6;
+}
+
+.progress-container {
+  margin-top: 10px;
+  height: 8px;
+  background: #2a2a4e;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #4ecdc4, #45b7aa);
+  transition: width 0.1s ease;
 }
 
 .result-container {
@@ -739,8 +758,7 @@ input[type="number"] {
   padding: 15px;
   min-width: 200px;
   max-width: min(350px, calc(100vw - 20px));
-  max-height: 450px;
-  overflow: hidden;
+  /* 高度由JS动态计算 */
   z-index: 1000;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   pointer-events: none;

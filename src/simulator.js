@@ -873,12 +873,14 @@ export class Simulator {
     return { avg: totalDamage / runs, distribution };
   }
   
-  generateTable(actionSequence, runs = 10000, initialCards = null, initialClimax = null) {
+  async generateTable(actionSequence, runs = 10000, initialCards = null, initialClimax = null, onProgress = null) {
     const deckRange = [];
     for (let d = 16; d <= 35; d++) deckRange.push(d);
     
     const climaxRange = [3, 4, 5, 6, 7, 8];
     const results = {};
+    const total = deckRange.length * climaxRange.length;
+    let done = 0;
     
     for (const deck of deckRange) {
       results[deck] = {};
@@ -891,6 +893,11 @@ export class Simulator {
           results[deck][climax] = null;
         } else {
           results[deck][climax] = this.simulate(deck, climax, actionSequence, runs, initialCards, initialClimax);
+        }
+        done++;
+        if (onProgress) {
+          onProgress(done / total * 100);
+          await new Promise(r => setTimeout(r, 0)); // 让出控制权更新UI
         }
       }
     }
